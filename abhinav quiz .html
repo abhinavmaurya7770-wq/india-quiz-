@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Quiz Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+
+      /* Tricolor background */
+      background: linear-gradient(
+        to bottom,
+        #FF9933 0%,
+        #FF9933 33%,
+        #ffffff 33%,
+        #ffffff 66%,
+        #138808 66%,
+        #138808 100%
+      );
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 24px;
+      border-radius: 18px;
+      width: 90%;
+      max-width: 650px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      position: relative;
+      border: 4px solid #000080;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #000080;
+    }
+
+    button {
+      padding: 12px 18px;
+      margin: 8px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    /* Tricolor buttons */
+    .btn {
+      background: linear-gradient(45deg, #FF9933, #ffffff, #138808);
+      color: #000;
+      border: 2px solid #000080;
+    }
+
+    .option {
+      display: block;
+      background: linear-gradient(45deg, #ffffff, #e3f2fd);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 8px 0;
+      cursor: pointer;
+      border-left: 6px solid #FF9933;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .option:hover {
+      transform: scale(1.05);
+      background: linear-gradient(45deg, #FF9933, #ffffff);
+    }
+
+    .hidden { display: none; }
+    .center { text-align: center; }
+
+    .timer {
+      font-weight: bold;
+      color: #138808;
+    }
+
+    /* Slide animation */
+    .slide-out {
+      animation: slideOut 0.4s forwards;
+    }
+
+    .slide-in {
+      animation: slideIn 0.4s forwards;
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(-100%); opacity: 0; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HOME -->
+  <div class="card" id="home">
+    <h1>🇮🇳 India Quiz Game</h1>
+    <p class="center">Choose Difficulty</p>
+    <div class="center">
+      <button class="btn" onclick="startQuiz('easy')">Easy</button>
+      <button class="btn" onclick="startQuiz('medium')">Medium</button>
+      <button class="btn" onclick="startQuiz('hard')">Hard</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div class="card hidden" id="quiz">
+    <div id="questionBox">
+      <h2 id="question"></h2>
+      <div id="options"></div>
+      <p class="center timer">⏱ Time Left: <span id="time">15</span>s</p>
+      <p class="center" id="progress"></p>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="card hidden" id="result">
+    <h2>🎉 Quiz Result</h2>
+    <p id="score" class="center"></p>
+    <div class="center">
+      <button class="btn" onclick="location.reload()">Play Again</button>
+    </div>
+  </div>
+
+<script>
+// ---------- SOUND ----------
+const correctSound = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+const wrongSound = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
+const finishSound = new Audio("https://actions.google.com/sounds/v1/cartoon/concussive_drum_hit.ogg");
+
+// ---------- QUESTIONS ----------
+const questions = {
+  easy: [
+    {q:"Father of Nation?",o:["Gandhi","Nehru","Bose","Patel"],a:0},
+    {q:"Capital of India?",o:["Mumbai","Delhi","Chennai","Kolkata"],a:1},
+    {q:"National animal?",o:["Lion","Tiger","Elephant","Leopard"],a:1},
+    {q:"Festival of lights?",o:["Holi","Diwali","Eid","Pongal"],a:1},
+    {q:"River Ganga flows into?",o:["Arabian Sea","Bay of Bengal","Indian Ocean","Pacific"],a:1},
+    {q:"Taj Mahal city?",o:["Delhi","Agra","Jaipur","Lucknow"],a:1},
+    {q:"National bird?",o:["Peacock","Parrot","Crow","Sparrow"],a:0},
+    {q:"Currency?",o:["Dollar","Rupee","Euro","Yen"],a:1},
+    {q:"Most popular sport?",o:["Cricket","Football","Tennis","Hockey"],a:0},
+    {q:"Independence year?",o:["1945","1947","1950","1930"],a:1},
+    {q:"Tea state?",o:["Punjab","Assam","UP","Bihar"],a:1},
+    {q:"Pink City?",o:["Jaipur","Udaipur","Jodhpur","Bikaner"],a:0}
+  ],
+  medium: [
+    {q:"National anthem writer?",o:["Tagore","Iqbal","Premchand","Nehru"],a:0},
+    {q:"Longest coastline state?",o:["Gujarat","Kerala","TN","Maharashtra"],a:0},
+    {q:"First PM?",o:["Nehru","Gandhi","Patel","Rajendra"],a:0},
+    {q:"Thar Desert state?",o:["Rajasthan","Gujarat","Punjab","MP"],a:0},
+    {q:"Kathakali state?",o:["Kerala","TN","UP","Odisha"],a:0},
+    {q:"Red Fort builder?",o:["Akbar","Shah Jahan","Babur","Aurangzeb"],a:1},
+    {q:"Highest peak India?",o:["K2","Kanchenjunga","Everest","Nanda Devi"],a:1},
+    {q:"Five rivers land?",o:["Punjab","Haryana","UP","Bihar"],a:0},
+    {q:"Konark Temple state?",o:["Odisha","Gujarat","MP","UP"],a:0},
+    {q:"Gateway of India city?",o:["Mumbai","Delhi","Kolkata","Chennai"],a:0},
+    {q:"First President?",o:["Rajendra Prasad","Radhakrishnan","Nehru","Patel"],a:0}
+  ],
+  hard: [
+    {q:"Maurya Empire founder?",o:["Ashoka","Chandragupta","Bindusara","Harsha"],a:1},
+    {q:"Smallest state area?",o:["Goa","Sikkim","Tripura","Nagaland"],a:0},
+    {q:"Constitution adopted?",o:["1947","1949","1950","1952"],a:1},
+    {q:"Nathu La connects?",o:["India-Tibet","India-China","India-Nepal","India-Bhutan"],a:0},
+    {q:"Vande Mataram author?",o:["Bankim","Tagore","Iqbal","Nehru"],a:0},
+    {q:"Khajuraho builders?",o:["Chandel","Gupta","Maurya","Chola"],a:0},
+    {q:"Highest literacy state?",o:["Kerala","Goa","TN","Mizoram"],a:0},
+    {q:"Frontier Gandhi?",o:["Ghaffar Khan","Azad","Tilak","Bose"],a:0},
+    {q:"Narmada origin?",o:["Amarkantak","Himalaya","Western Ghats","Aravali"],a:0},
+    {q:"Battle of Plassey year?",o:["1757","1764","1857","1707"],a:0},
+    {q:"Vijayanagara capital?",o:["Hampi","Mysore","Madurai","Warangal"],a:0}
+  ]
+};
+
+let current=0,score=0,quizData=[],timer,timeLeft=15;
+
+function startQuiz(level){
+  document.getElementById('home').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+
+  // shuffle questions fresh every time
+  const shuffled = [...questions[level]].sort(() => Math.random() - 0.5);
+  quizData = shuffled.slice(0, 10).map(q => {
+    // also shuffle options for each question
+    const opts = [...q.o].map((text, idx) => ({ text, idx }));
+    const mixed = opts.sort(() => Math.random() - 0.5);
+    const newAnswerIndex = mixed.findIndex(m => m.idx === q.a);
+    return { q: q.q, o: mixed.map(m => m.text), a: newAnswerIndex };
+  });
+  current=0;score=0;
+  showQuestion(true);
+}
+
+function showQuestion(first=false){
+  if(current>=10) return showResult();
+
+  const box = document.getElementById('questionBox');
+
+  if(!first){
+    box.classList.remove('slide-in');
+    box.classList.add('slide-out');
+
+    setTimeout(()=>{
+      renderQuestion();
+      box.classList.remove('slide-out');
+      box.classList.add('slide-in');
+    },400);
+  } else {
+    renderQuestion();
+    box.classList.add('slide-in');
+  }
+}
+
+function renderQuestion(){
+  const q=quizData[current];
+  document.getElementById('question').innerText=q.q;
+  document.getElementById('progress').innerText=`Question ${current+1} / 10`;
+
+  const optDiv=document.getElementById('options');
+  optDiv.innerHTML="";
+
+  q.o.forEach((opt,i)=>{
+    const btn=document.createElement('div');
+    btn.className='option';
+    btn.innerText=opt;
+    btn.onclick=()=>selectOption(i);
+    optDiv.appendChild(btn);
+  });
+
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timer);
+  timeLeft=15;
+  document.getElementById('time').innerText=timeLeft;
+
+  timer=setInterval(()=>{
+    timeLeft--;
+    document.getElementById('time').innerText=timeLeft;
+    if(timeLeft<=0){
+      clearInterval(timer);
+      wrongSound.play();
+      current++;
+      showQuestion();
+    }
+  },1000);
+}
+
+function selectOption(i){
+  clearInterval(timer);
+
+  if(i===quizData[current].a){
+    score++;
+    correctSound.play();
+  } else {
+    wrongSound.play();
+  }
+
+  current++;
+  showQuestion();
+}
+
+function showResult(){
+  document.getElementById('quiz').classList.add('hidden');
+  document.getElementById('result').classList.remove('hidden');
+  document.getElementById('score').innerText=`You got ${score} out of 10 correct!`;
+  finishSound.play();
+}
+// ---------- FIREWORKS ----------
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d');
+canvas.style.position = 'fixed';
+canvas.style.top = 0;
+canvas.style.left = 0;
+canvas.style.pointerEvents = 'none';
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+document.body.appendChild(canvas);
+
+let particles = [];
+
+function createFirework(){
+  const x = Math.random() * canvas.width;
+  const y = Math.random() * canvas.height / 2;
+  const colors = ['#FF9933','#ffffff','#138808','#000080'];
+
+  for(let i=0;i<60;i++){
+    particles.push({
+      x,y,
+      angle: Math.random()*2*Math.PI,
+      speed: Math.random()*5+2,
+      radius: Math.random()*3+1,
+      color: colors[Math.floor(Math.random()*colors.length)],
+      life: 100
+    });
+  }
+}
+
+function animateFireworks(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  particles.forEach((p,i)=>{
+    p.x += Math.cos(p.angle)*p.speed;
+    p.y += Math.sin(p.angle)*p.speed;
+    p.life--;
+
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+    ctx.fillStyle=p.color;
+    ctx.fill();
+
+    if(p.life<=0) particles.splice(i,1);
+  });
+  requestAnimationFrame(animateFireworks);
+}
+animateFireworks();
+
+function startFireworks(){
+  for(let i=0;i<5;i++){
+    setTimeout(createFirework,i*400);
+  }
+}
+
+</script>
+
+</body>
+</html>
